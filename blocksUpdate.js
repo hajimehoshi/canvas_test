@@ -1,6 +1,6 @@
 'use strict';
 
-hajimehoshiGameBlocks.update = (function () {
+(function (hhg, hhgb) {
     function isLoading(images) {
         var key;
         for (key in images) {
@@ -10,10 +10,24 @@ hajimehoshiGameBlocks.update = (function () {
         }
         return false;
     }
+    function update_MODE_INIT(canvasSize, images, mouseState, state) {
+        return {mode: hhgb.MODE_TITLE};
+    }
+    function update_MODE_TITLE(canvasSize, images, mouseState, state) {
+        if (mouseState.isClicked) {
+            return hhg.update(state, {
+                transition: hhgb.TRANSITION_TIME,
+                nextState: {mode: hhgb.MODE_GAME},
+            });
+        }
+        return state;
+    }
+    function update_MODE_GAME(canvasSize, images, mouseState, state) {
+        return state;
+    }
     function update(canvasSize, images, mouseState, state) {
         //console.log(mouseState.x, mouseState.y, mouseState.isClicked);
-        var hhg = hajimehoshiGame;
-        var hhgb = hajimehoshiGameBlocks;
+        var updateFunc;
         if (state === null) {
             return update(canvasSize, images, mouseState, {mode: hhgb.MODE_INIT});
         }
@@ -32,19 +46,8 @@ hajimehoshiGameBlocks.update = (function () {
                 });
             })();
         }
-        if (state.mode === hhgb.MODE_INIT) {
-            return {mode: hhgb.MODE_TITLE};
-        }
-        if (state.mode === hhgb.MODE_TITLE) {
-            if (mouseState.isClicked) {
-                return hhg.update(state, {
-                    transition: hhgb.TRANSITION_TIME,
-                    nextState: {mode: hhgb.MODE_GAME},
-                });
-            }
-        }
-        // 変化なし?
-        return state;
+        updateFunc = eval('update_' + state.mode);
+        return updateFunc(canvasSize, images, mouseState, state);
     }
-    return update;
-})();
+    hhgb.update = update;
+})(hajimehoshiGame, hajimehoshiGameBlocks);

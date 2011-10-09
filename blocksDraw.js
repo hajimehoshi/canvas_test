@@ -1,6 +1,6 @@
 'use strict';
 
-hajimehoshiGameBlocks.draw = (function () {
+(function (hhgb) {
     var iota = 0;
     var TRANSITION_TYPE_NONE = iota++;
     var TRANSITION_TYPE_PREV = iota++;
@@ -74,7 +74,6 @@ hajimehoshiGameBlocks.draw = (function () {
         return 0;
     }
     function getTransitionType(transition) {
-        var hhgb = hajimehoshiGameBlocks;
         if (hhgb.TRANSITION_HALF_TIME < transition &&
             transition <= hhgb.TRANSITION_TIME) {
             return TRANSITION_TYPE_PREV;
@@ -97,7 +96,6 @@ hajimehoshiGameBlocks.draw = (function () {
         throw 'invalid transitionType';
     }
     function drawTransition(context, canvas, transitionType, transition) {
-        var hhgb = hajimehoshiGameBlocks;
         var alpha;
         if (transitionType === TRANSITION_TYPE_PREV) {
             alpha = 1 - (transition - hhgb.TRANSITION_HALF_TIME) / hhgb.TRANSITION_HALF_TIME;
@@ -113,7 +111,6 @@ hajimehoshiGameBlocks.draw = (function () {
     function draw(canvas, context, images, state) {
         /*console.log($(canvas).width(), $(canvas).height());
           console.log(canvas.offsetWidth, canvas.offsetHeight);*/
-        var hhgb = hajimehoshiGameBlocks;
         var backgroundImage;
         var blocksImage;
         var fontImage;
@@ -150,7 +147,6 @@ hajimehoshiGameBlocks.draw = (function () {
             context.fillRect(0, 0, 100, 100);
         }
         drawTransition(context, canvas, transitionType, transition);
-        return;
     }
-    return draw;
-})();
+    hhgb.draw = draw;
+})(hajimehoshiGameBlocks);

@@ -1,17 +1,21 @@
 'use strict';
 
 var hajimehoshiGameBlocks = (function () {
-    var iota = 0;
-    var MODE_INIT  = iota++;
-    var MODE_TITLE = iota++;
-    var MODE_GAME  = iota++;
-    var TRANSITION_TIME = 40;
-    var TRANSITION_HALF_TIME = TRANSITION_TIME / 2;
-    return {
-        MODE_INIT:  MODE_INIT,
-        MODE_TITLE: MODE_TITLE,
-        MODE_GAME:  MODE_GAME,
-        TRANSITION_TIME: TRANSITION_TIME,
-        TRANSITION_HALF_TIME: TRANSITION_HALF_TIME,
-    };
+    var result = {};
+    var key, value;
+    var modes = ['MODE_INIT', 'MODE_TITLE', 'MODE_GAME'];
+    for (key in modes) {
+        value = modes[key]
+        result[value] = value;
+    }
+    var modeGames = ['MODE_GAME_START', 'MODE_GAME_PLAYING', 'MODE_GAME_GAMEOVER'];
+    for (key in modeGames) {
+        value = modeGames[key]
+        result[value] = value;
+    }
+
+    result.TRANSITION_TIME = 40;
+    result.TRANSITION_HALF_TIME = result.TRANSITION_TIME / 2;
+
+    return result;
 })();
