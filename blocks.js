@@ -1,21 +1,20 @@
 'use strict';
 
 var hajimehoshiGameBlocks = (function () {
-    var result = {};
-    var key, value;
-    var modes = ['MODE_INIT', 'MODE_TITLE', 'MODE_GAME'];
-    for (key in modes) {
-        value = modes[key]
-        result[value] = value;
-    }
-    var modeGames = ['MODE_GAME_START', 'MODE_GAME_PLAYING', 'MODE_GAME_GAMEOVER'];
-    for (key in modeGames) {
-        value = modeGames[key]
-        result[value] = value;
-    }
+    var consts = {};
+    var iota;
+    iota = 0;
+    consts.MODE_INIT  = iota++;
+    consts.MODE_TITLE = iota++;
+    consts.MODE_GAME  = iota++;
 
-    result.TRANSITION_TIME = 40;
-    result.TRANSITION_HALF_TIME = result.TRANSITION_TIME / 2;
+    iota = 0;
+    consts.MODE_GAME_START    = iota++;
+    consts.MODE_GAME_PLAYING  = iota++;
+    consts.MODE_GAME_GAMEOVER = iota++;
 
-    return result;
+    consts.TRANSITION_TIME = 40;
+    consts.TRANSITION_HALF_TIME = consts.TRANSITION_TIME / 2;
+    
+    return {consts: consts};
 })();

@@ -1,6 +1,6 @@
 'use strict';
 
-(function (hhgb) {
+hajimehoshiGameBlocks.draw = (function (consts) {
     var iota = 0;
     var TRANSITION_TYPE_NONE = iota++;
     var TRANSITION_TYPE_PREV = iota++;
@@ -74,11 +74,11 @@
         return 0;
     }
     function getTransitionType(transition) {
-        if (hhgb.TRANSITION_HALF_TIME < transition &&
-            transition <= hhgb.TRANSITION_TIME) {
+        if (consts.TRANSITION_HALF_TIME < transition &&
+            transition <= consts.TRANSITION_TIME) {
             return TRANSITION_TYPE_PREV;
         }
-        if (0 < transition && transition <= hhgb.TRANSITION_HALF_TIME) {
+        if (0 < transition && transition <= consts.TRANSITION_HALF_TIME) {
             return TRANSITION_TYPE_NEXT;
         }
         return TRANSITION_TYPE_NONE;
@@ -98,12 +98,12 @@
     function drawTransition(context, canvas, transitionType, transition) {
         var alpha;
         if (transitionType === TRANSITION_TYPE_PREV) {
-            alpha = 1 - (transition - hhgb.TRANSITION_HALF_TIME) / hhgb.TRANSITION_HALF_TIME;
+            alpha = 1 - (transition - consts.TRANSITION_HALF_TIME) / consts.TRANSITION_HALF_TIME;
             context.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
             context.fillRect(0, 0, canvas.width, canvas.height)
         }
         if (transitionType === TRANSITION_TYPE_NEXT) {
-            alpha = transition / hhgb.TRANSITION_HALF_TIME;
+            alpha = transition / consts.TRANSITION_HALF_TIME;
             context.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
             context.fillRect(0, 0, canvas.width, canvas.height)
         }
@@ -123,7 +123,7 @@
         transition = getTransition(state);
         transitionType = getTransitionType(transition);
         stateToDraw = getStateToDraw(transitionType, state);
-        if (stateToDraw.mode === hhgb.MODE_INIT) {
+        if (stateToDraw.mode === consts.MODE_INIT) {
             context.fillStyle = '#cccccc';
             context.fillRect(0, 0, canvas.width, canvas.height);
             return;
@@ -131,7 +131,7 @@
         blocksImage = images['blocks'].element;
         fontImage = images['font'].element;
         fontImageData = imageToImageData(fontImage);
-        if (stateToDraw.mode === hhgb.MODE_TITLE) {
+        if (stateToDraw.mode === consts.MODE_TITLE) {
             context.fillStyle = '#cccccc';
             context.fillRect(0, 0, canvas.width, canvas.height);
             title = "BLOCKS";
@@ -139,7 +139,7 @@
             y = canvas.height / 2 - 8;
             drawText(context, fontImageData, title, x, y, [0x66, 0x66, 0x66]);
         }
-        if (stateToDraw.mode === hhgb.MODE_GAME) {
+        if (stateToDraw.mode === consts.MODE_GAME) {
             backgroundImage = images['background'].element;
             context.drawImage(backgroundImage, 0, 0, 320, 240);
             // TODO: draw Field
@@ -148,5 +148,5 @@
         }
         drawTransition(context, canvas, transitionType, transition);
     }
-    hhgb.draw = draw;
-})(hajimehoshiGameBlocks);
+    return draw;
+})(hajimehoshiGameBlocks.consts);

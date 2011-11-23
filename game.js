@@ -81,40 +81,44 @@ var hajimehoshiGame = (function () {
         elm.addEventListener('mouseout', function (event) {
             buttons = 0;
         }, false);
-        function getState() {
+        function getState(mouseState) {
+            var buttonState = 0;
+            if (mouseState !== null && buttons !== 0) {
+                buttonState = mouseState.buttonState + 1;
+            }
             return {
                 x: x,
                 y: y,
-                isClicked: buttons !== 0,
+                buttonState: buttonState,
             };
         }
         return {
             get getState() { return getState; },
         };
     }
-    function mainLoop(canvas, context, imageLoader, mouseStateEnv, state, update, draw) {
+    function mainLoop(canvas, context, imageLoader, mouseStateEnv, mouseState, state, update, draw) {
         var canvasSize = {
             width:  canvas.width,
             height: canvas.height,
         };
-        var mouseState = mouseStateEnv.getState();
-        var images     = imageLoader.getImages();
+        var nextMouseState = mouseStateEnv.getState(mouseState);
+        var images = imageLoader.getImages();
         var newState;
         var fps = 60;
-        newState = update(canvasSize, images, mouseState, state);
+        newState = update(canvasSize, images, nextMouseState, state);
         context.clearRect(0, 0, canvasSize.width, canvasSize.height);
         context.save();
         draw(canvas, context, images, newState);
         context.restore();
         window.setTimeout(mainLoop, 1000 / fps,
-                          canvas, context, imageLoader, mouseStateEnv,
+                          canvas, context, imageLoader, mouseStateEnv, nextMouseState,
                           newState, update, draw);
     }
     function run(canvas, imageFilenames, state, update, draw) {
         var context = canvas.getContext('2d');
         var imageLoader   = newImageLoader(imageFilenames);
         var mouseStateEnv = newMouseStateEnv(canvas);
-        mainLoop(canvas, context, imageLoader, mouseStateEnv, state, update, draw);
+        mainLoop(canvas, context, imageLoader, mouseStateEnv, null, state, update, draw);
     }
     return {
         get clone() { return clone; },
