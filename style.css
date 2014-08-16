@@ -16,11 +16,4 @@ body {
     transform-origin: center center;
     -moz-transform-origin: center center;
     -webkit-transform-origin: center center;
-    transform: scale(2);
-    -moz-transform: scale(2);
-    -ms-transform: scale(2);
-    -webkit-transform: scale(2);
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: -moz-crisp-edges;
-    -ms-interpolation-mode: nearest-neighbor;
 }
