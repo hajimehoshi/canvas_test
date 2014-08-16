@@ -1,75 +1,45 @@
 module Blocks {
 
-    var iota;
-    iota = 0;
-    var MODE_INIT  = iota++;
-    var MODE_TITLE = iota++;
-    var MODE_GAME  = iota++;
+    var MODE_INIT  = 0;
+    var MODE_TITLE = 1;
+    var MODE_GAME  = 2;
 
-    iota = 0;
-    var MODE_GAME_START    = iota++;
-    var MODE_GAME_PLAYING  = iota++;
-    var MODE_GAME_GAMEOVER = iota++;
+    var MODE_GAME_START    = 0;
+    var MODE_GAME_PLAYING  = 1;
+    var MODE_GAME_GAMEOVER = 2;
 
     var TRANSITION_TIME = 40;
     var TRANSITION_HALF_TIME = TRANSITION_TIME / 2;
 
-    iota = 0;
-    var TRANSITION_TYPE_NONE = iota++;
-    var TRANSITION_TYPE_PREV = iota++;
-    var TRANSITION_TYPE_NEXT = iota++;
+    var TRANSITION_TYPE_NONE = 0;
+    var TRANSITION_TYPE_PREV = 1;
+    var TRANSITION_TYPE_NEXT = 2;
 
     export class Draw {
-        imageToImageData = (function () {
-            var cache = {};
-            return function (img) {
-                var canvas;
-                var context;
-                var imageData;
-                if (img.src in cache) {
-                    return cache[img.src];
-                }
-                canvas = document.createElement('canvas');
-                canvas.width  = img.width;
-                canvas.height = img.height;
-                context = canvas.getContext('2d');
-                context.drawImage(img, 0, 0);
-                // If you use an URL which starts with 'file://', it may fail.
-                imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                cache[img.src] = imageData;
-                return imageData;
-            }
-        })();
 
-        drawText(context, fontImageData, str, x, y, color) {
+        private imageDataCache: ImageDataCache = new ImageDataCache;
+
+        private drawText(context, fontImageData, str, x, y, color) {
             var letterNumInLine = 16;
             var letterSize = fontImageData.width / letterNumInLine;
-            var contextImageData;
-            var fontData, contextData;
-            var contextDataWidth;
-            var r, g, b;
-            var i, j, k;
-            var ch;
-            var sx, sy;
-            var si, di;
-            fontData = fontImageData.data;
-            contextImageData = context.getImageData(x, y, str.length * letterSize, letterSize);
-            contextData = contextImageData.data;
-            r = color[0];
-            g = color[1];
-            b = color[2];
-            for (i = 0; i < str.length; i++) {
-                ch = str.charCodeAt(i);
-                sx = ((ch - 32) % 16)             * letterSize;
-                sy = (Math.floor((ch - 32) / 16)) * letterSize;
-                si = (sx + sy * fontImageData.width) * 4;
-                di = i * letterSize                  * 4;
-                for (k = 0;
+            var fontData = fontImageData.data;
+            var contextImageData = context.getImageData(x, y, str.length * letterSize, letterSize);
+            var contextData = contextImageData.data;
+            var r = color[0];
+            var g = color[1];
+            var b = color[2];
+            for (var i = 0; i < str.length; i++) {
+                var ch = str.charCodeAt(i);
+                var sx = ((ch - 32) % 16)             * letterSize;
+                var sy = (Math.floor((ch - 32) / 16)) * letterSize;
+                var si = (sx + sy * fontImageData.width) * 4;
+                var di = i * letterSize                  * 4;
+                for (var k = 0;
                      k < letterSize;
                      k++,
                      di += (contextImageData.width - letterSize) * 4,
                      si += (fontImageData.width    - letterSize) * 4) {
-                    for (j = 0;
+                    for (var j = 0;
                          j < letterSize;
                          j++, di += 4, si += 4) {
                         if (fontData[si + 3] === 255) {
@@ -83,13 +53,15 @@ module Blocks {
             }
             context.putImageData(contextImageData, x, y);
         }
-        getTransition(state) {
+
+        private getTransition(state) {
             if ('transition' in state) {
                 return state.transition;
             }
             return 0;
         }
-        getTransitionType(transition) {
+
+        private getTransitionType(transition) {
             if (TRANSITION_HALF_TIME < transition &&
                 transition <= TRANSITION_TIME) {
                 return TRANSITION_TYPE_PREV;
@@ -99,7 +71,8 @@ module Blocks {
             }
             return TRANSITION_TYPE_NONE;
         }
-        getStateToDraw(transitionType, state) {
+
+        private getStateToDraw(transitionType, state) {
             if (transitionType === TRANSITION_TYPE_NONE) {
                 return state;
             }
@@ -111,50 +84,42 @@ module Blocks {
             }
             throw 'invalid transitionType';
         }
-        drawTransition(context, canvas, transitionType, transition) {
-            var alpha;
+
+        private drawTransition(context, canvas, transitionType, transition) {
             if (transitionType === TRANSITION_TYPE_PREV) {
-                alpha = 1 - (transition - TRANSITION_HALF_TIME) / TRANSITION_HALF_TIME;
+                var alpha = 1 - (transition - TRANSITION_HALF_TIME) / TRANSITION_HALF_TIME;
                 context.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
                 context.fillRect(0, 0, canvas.width, canvas.height)
             }
             if (transitionType === TRANSITION_TYPE_NEXT) {
-                alpha = transition / TRANSITION_HALF_TIME;
+                var alpha = transition / TRANSITION_HALF_TIME;
                 context.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
                 context.fillRect(0, 0, canvas.width, canvas.height)
             }
         }
-        draw(canvas, context, images, state) {
-            var backgroundImage;
-            var blocksImage;
-            var fontImage;
-            var fontImageData;
-            var transition;
-            var transitionType;
-            var stateToDraw;
-            var title;
-            var x, y;
-            transition = this.getTransition(state);
-            transitionType = this.getTransitionType(transition);
-            stateToDraw = this.getStateToDraw(transitionType, state);
+
+        public draw(canvas, context, images, state) {
+            var transition = this.getTransition(state);
+            var transitionType = this.getTransitionType(transition);
+            var stateToDraw = this.getStateToDraw(transitionType, state);
             if (stateToDraw.mode === MODE_INIT) {
                 context.fillStyle = '#cccccc';
                 context.fillRect(0, 0, canvas.width, canvas.height);
                 return;
             }
-            blocksImage = images['blocks'].element;
-            fontImage = images['font'].element;
-            fontImageData = this.imageToImageData(fontImage);
+            var blocksImage = images['blocks'].element;
+            var fontImage = images['font'].element;
+            var fontImageData = this.imageDataCache.get(fontImage);
             if (stateToDraw.mode === MODE_TITLE) {
                 context.fillStyle = '#cccccc';
                 context.fillRect(0, 0, canvas.width, canvas.height);
-                title = "BLOCKS";
-                x = (canvas.width - title.length * 8) / 2;
-                y = canvas.height / 2 - 8;
+                var title = "BLOCKS";
+                var x = (canvas.width - title.length * 8) / 2;
+                var y = canvas.height / 2 - 8;
                 this.drawText(context, fontImageData, title, x, y, [0x66, 0x66, 0x66]);
             }
             if (stateToDraw.mode === MODE_GAME) {
-                backgroundImage = images['background'].element;
+                var backgroundImage = images['background'].element;
                 context.drawImage(backgroundImage, 0, 0, 320, 240);
                 // TODO: draw Field
                 context.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -168,7 +133,7 @@ module Blocks {
         game_: Game;
         updates_: any;
 
-        constructor(game) {
+        public constructor(game) {
             this.game_ = game;
             this.updates_ = {};
             this.updates_[MODE_INIT] = (canvasSize, images, mouseState, state) => {
@@ -176,7 +141,7 @@ module Blocks {
             };
             this.updates_[MODE_TITLE] = (canvasSize, images, mouseState, state) => {
                 if (mouseState.buttonState === 1) {
-                    return this.game_.update(state, {
+                    return Game.update(state, {
                         transition: TRANSITION_TIME,
                         nextState: {mode: MODE_GAME},
                     });
@@ -185,7 +150,7 @@ module Blocks {
             };
             this.updates_[MODE_GAME] = (canvasSize, images, mouseState, state) => {
                 if (!('field' in state)) {
-                    this.game_.update(state, {
+                    Game.update(state, {
                         field: this.newField(),
                         score: 0,
                     });
@@ -194,16 +159,17 @@ module Blocks {
             };
         }
 
-        isLoading(images) {
+        private isLoading(images): boolean {
             var key;
             for (key in images) {
-                if (images[key].state !== 'loaded') {
+                if (!images[key].loaded) {
                     return true;
                 }
             }
             return false;
         }
-        newField() {
+
+        private newField() {
             var width = 10;
             var height = 20;
             var blocks = new Array(width * height);
@@ -217,41 +183,8 @@ module Blocks {
                 blocks: blocks,
             };
         }
-        putPiece(field, piece, x, y, angle, b) {
-            var newField;
-            var i, j;
-            var idx;
-            newField = newField();
-            for (j = 0; j < field.height; j++) {
-                for (i = 0; i < field.width; i++) {
-                    idx = i + j * field.width;
-                    if (x <= i && i < x + piece.width &&
-                        x <= j && j < y + piece.height) {
-                        // TODO: use angle
-                        newField.blocks[idx] = b;
-                    } else {
-                        newField.blocks[idx] = field.blocks[idx];
-                    }
-                }
-            }
-            return newField;
-        }
-        flushField(field) {
-            var newField;
-            var i, j;
-            var idx;
-            newField = newField();
-            for (j = 0; j < field.height; j++) {
-                for (i = 0; i < field.width; i++) {
-                    idx = i + j * field.width;
-                    newField.blocks[idx] = field.blocks[idx];
-                }
-            }
-            // 列数はどう返す?
-            return newField;
-        }
 
-        update(canvasSize, images, mouseState, state) {
+        public update(canvasSize, images, mouseState, state) {
             var nextTransition;
             if (state === null) {
                 return this.update(canvasSize, images, mouseState, {mode: MODE_INIT});
@@ -264,12 +197,11 @@ module Blocks {
                 if (nextTransition === 0) {
                     return state.nextState;
                 }
-                return this.game_.update(state, {
+                return Game.update(state, {
                     transition: nextTransition,
                 });
             }
             return this.updates_[state.mode](canvasSize, images, mouseState, state);
         }
-
     }
 }
