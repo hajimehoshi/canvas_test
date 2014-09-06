@@ -1,16 +1,17 @@
-class Main {
-    static main() {
-        var game = new Game;
-        var draw = new Blocks.Draw
-        var update = new Blocks.Update(game)
-        var canvas = <HTMLCanvasElement>document.getElementById('mainCanvas');
-        var imageFilenames = {
-            background: 'background.png',
-            blocks:     'blocks.png',
-            font:       'font.png',
-        };
-        game.run(canvas, imageFilenames, null, update, draw);
+module Blocks {
+    export class Main {
+        public static main(): void {
+            var canvas = <HTMLCanvasElement>document.getElementById('mainCanvas');
+            var imageFilenames = {
+                background: 'background.png',
+                blocks:     'blocks.png',
+                font:       'font.png',
+            };
+
+            var game = new Game(canvas, imageFilenames);
+            game.run();
+        }
     }
 }
 
-window.addEventListener('load', Main.main);
+window.addEventListener('load', Blocks.Main.main);

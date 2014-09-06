@@ -1,8 +1,13 @@
 module Blocks {
 
-    var MODE_INIT  = 0;
-    var MODE_TITLE = 1;
-    var MODE_GAME  = 2;
+    export interface Scene {
+        update(sceneManager: SceneManager, mouseState: MouseState): void;
+        draw(context, images): void;
+    }
+
+    // TODO: Use enum
+    var MODE_TITLE = 0;
+    var MODE_GAME  = 1;
 
     var MODE_GAME_START    = 0;
     var MODE_GAME_PLAYING  = 1;
@@ -15,11 +20,24 @@ module Blocks {
     var TRANSITION_TYPE_PREV = 1;
     var TRANSITION_TYPE_NEXT = 2;
 
-    export class Draw {
+    export class TmpScene {
 
-        private imageDataCache: ImageDataCache = new ImageDataCache;
+        private static newField(): Object {
+            var width = 10;
+            var height = 20;
+            var blocks = new Array(width * height);
+            var i;
+            for (i = 0; i < blocks.length; i++) {
+                blocks[i] = 0;
+            }
+            return {
+                width:  width,
+                height: height,
+                blocks: blocks,
+            };
+        }
 
-        private drawText(context, fontImageData, str, x, y, color) {
+        public static drawText(context, fontImageData, str, x, y, color): void {
             var letterNumInLine = 16;
             var letterSize = fontImageData.width / letterNumInLine;
             var fontData = fontImageData.data;
@@ -54,14 +72,14 @@ module Blocks {
             context.putImageData(contextImageData, x, y);
         }
 
-        private getTransition(state) {
+        private static getTransition(state) {
             if ('transition' in state) {
-                return state.transition;
+                return state['transition'];
             }
             return 0;
         }
 
-        private getTransitionType(transition) {
+        private static getTransitionType(transition) {
             if (TRANSITION_HALF_TIME < transition &&
                 transition <= TRANSITION_TIME) {
                 return TRANSITION_TYPE_PREV;
@@ -72,7 +90,7 @@ module Blocks {
             return TRANSITION_TYPE_NONE;
         }
 
-        private getStateToDraw(transitionType, state) {
+        private static getStateToDraw(transitionType, state) {
             if (transitionType === TRANSITION_TYPE_NONE) {
                 return state;
             }
@@ -80,12 +98,12 @@ module Blocks {
                 return state;
             }
             if (transitionType === TRANSITION_TYPE_NEXT) {
-                return state.nextState;
+                return state['nextState'];
             }
             throw 'invalid transitionType';
         }
 
-        private drawTransition(context, canvas, transitionType, transition) {
+        private static drawTransition(context, canvas, transitionType, transition) {
             if (transitionType === TRANSITION_TYPE_PREV) {
                 var alpha = 1 - (transition - TRANSITION_HALF_TIME) / TRANSITION_HALF_TIME;
                 context.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
@@ -98,15 +116,40 @@ module Blocks {
             }
         }
 
-        public draw(canvas, context, images, state) {
-            var transition = this.getTransition(state);
-            var transitionType = this.getTransitionType(transition);
-            var stateToDraw = this.getStateToDraw(transitionType, state);
-            if (stateToDraw.mode === MODE_INIT) {
-                context.fillStyle = '#cccccc';
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                return;
+        private imageDataCache: ImageDataCache = new ImageDataCache;
+        private game: Game;
+        private updates: any;
+
+        public constructor() {
+            this.updates = {};
+            this.updates[MODE_TITLE] = (mouseState, state): void => {
+                if (mouseState.buttonState === 1) {
+                    state['transition'] = TRANSITION_TIME;
+                    state['nextState'] = {mode: MODE_GAME};
+                }
+            };
+            this.updates[MODE_GAME] = (mouseState, state): void => {
+            };
+        }
+
+        public update(mouseState: MouseState, state: Object): void {
+            if (state['mode'] === null) {
+                state['mode'] = MODE_TITLE;
             }
+            if ('transition' in state && state['transition'] !== 0) {
+                var nextTransition = state['transition'] - 1;
+                if (nextTransition === 0) {
+                    return; // next state
+                }
+                state['transition'] = nextTransition;
+            }
+            this.updates[state['mode']](mouseState, state);
+        }
+
+        public draw(canvas, context, images, state) {
+            var transition = TmpScene.getTransition(state);
+            var transitionType = TmpScene.getTransitionType(transition);
+            var stateToDraw = TmpScene.getStateToDraw(transitionType, state);
             var blocksImage = images['blocks'].element;
             var fontImage = images['font'].element;
             var fontImageData = this.imageDataCache.get(fontImage);
@@ -116,7 +159,7 @@ module Blocks {
                 var title = "BLOCKS";
                 var x = (canvas.width - title.length * 8) / 2;
                 var y = canvas.height / 2 - 8;
-                this.drawText(context, fontImageData, title, x, y, [0x66, 0x66, 0x66]);
+                TmpScene.drawText(context, fontImageData, title, x, y, [0x66, 0x66, 0x66]);
             }
             if (stateToDraw.mode === MODE_GAME) {
                 var backgroundImage = images['background'].element;
@@ -125,83 +168,7 @@ module Blocks {
                 context.fillStyle = 'rgba(0, 0, 0, 0.5)';
                 context.fillRect(0, 0, 100, 100);
             }
-            this.drawTransition(context, canvas, transitionType, transition);
-        }
-    }
-
-    export class Update {
-        game_: Game;
-        updates_: any;
-
-        public constructor(game) {
-            this.game_ = game;
-            this.updates_ = {};
-            this.updates_[MODE_INIT] = (canvasSize, images, mouseState, state) => {
-                return {mode: MODE_TITLE};
-            };
-            this.updates_[MODE_TITLE] = (canvasSize, images, mouseState, state) => {
-                if (mouseState.buttonState === 1) {
-                    return Game.update(state, {
-                        transition: TRANSITION_TIME,
-                        nextState: {mode: MODE_GAME},
-                    });
-                }
-                return state;
-            };
-            this.updates_[MODE_GAME] = (canvasSize, images, mouseState, state) => {
-                if (!('field' in state)) {
-                    Game.update(state, {
-                        field: this.newField(),
-                        score: 0,
-                    });
-                }
-                return state;
-            };
-        }
-
-        private isLoading(images): boolean {
-            var key;
-            for (key in images) {
-                if (!images[key].loaded) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private newField() {
-            var width = 10;
-            var height = 20;
-            var blocks = new Array(width * height);
-            var i;
-            for (i = 0; i < blocks.length; i++) {
-                blocks[i] = 0;
-            }
-            return {
-                width:  width,
-                height: height,
-                blocks: blocks,
-            };
-        }
-
-        public update(canvasSize, images, mouseState, state) {
-            var nextTransition;
-            if (state === null) {
-                return this.update(canvasSize, images, mouseState, {mode: MODE_INIT});
-            }
-            if (this.isLoading(images)) {
-                return state;
-            }
-            if ('transition' in state && state.transition !== 0) {
-                nextTransition = state.transition - 1;
-                if (nextTransition === 0) {
-                    return state.nextState;
-                }
-                return Game.update(state, {
-                    transition: nextTransition,
-                });
-            }
-            return this.updates_[state.mode](canvasSize, images, mouseState, state);
+            TmpScene.drawTransition(context, canvas, transitionType, transition);
         }
     }
 }

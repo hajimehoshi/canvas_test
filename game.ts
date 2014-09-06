@@ -1,76 +1,70 @@
-class Game {
+module Blocks {
 
-    private static clone(obj) {
-        // ref: http://keithdevens.com/weblog/archive/2007/Jun/07/javascript.clone
-        if (obj === null ||
-            typeof(obj) !== 'object' ||
-            obj.constructor !== Object) {
-            return obj;
-        }
-        var newObj = new obj.constructor();
-        for (var key in obj) {
-            newObj[key] = Game.clone(obj[key]);
-        }
-        return newObj;
-    }
+    export class Game {
 
-    public static update(obj, pairs) {
-        var newObj = Game.clone(obj);
-        for (var key in pairs) {
-            var objToUpdate = newObj;
-            var keys = key.split('/');
-            for (var i = 0; i < keys.length - 1; i++) {
-                objToUpdate = objToUpdate[keys[i]];
+        private static newImageLoader(filenames: Object) {
+            var images = {};
+            for (var key in filenames) {
+                ((key: string): void => {
+                    images[key] = {loaded: false};
+                    var imageElm = new Image;
+                    imageElm.src = filenames[key];
+                    imageElm.addEventListener('load', (e): void => {
+                        images[key].loaded = true;
+                        images[key].element = imageElm;
+                    });
+                })(key);
             }
-            objToUpdate[keys[keys.length - 1]] = pairs[keys];
+            function getImages() {
+                return images;
+            }
+            return {
+                get getImages() { return getImages; },
+            };
         }
-        return newObj;
+
+        private static isLoading(images): boolean {
+            var key;
+            for (key in images) {
+                if (!images[key].loaded) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private mouseState: MouseState;
+        private canvas: HTMLCanvasElement;
+        private imageLoader: any;
+        private sceneManager = new SceneManager(new TitleScene);
+
+        public constructor(canvas: HTMLCanvasElement, imageFilenames: Object) {
+            this.mouseState = new MouseState(canvas);
+            this.canvas = canvas;
+            this.imageLoader = Game.newImageLoader(imageFilenames);
+        }
+
+        public run(): void {
+            this.mainLoop();
+        }
+
+        private mainLoop(): void {
+            this.doMainLoop();
+            window.requestAnimationFrame((): void => {
+                this.mainLoop();
+            });
+        }
+
+        private doMainLoop(): void {
+            this.mouseState.update();
+            var images = this.imageLoader.getImages();
+            if (Game.isLoading(images)) {
+                return;
+            }
+            this.sceneManager.update(this.mouseState);
+            this.sceneManager.draw(this.canvas, images);
+        }
+
     }
 
-    private newImageLoader(filenames) {
-        var images = {};
-        for (var key in filenames) {
-            images[key] = {loaded: false};//{state: 'loading'};
-            ((key) => {
-                var imageElm;
-                imageElm = new Image;
-                imageElm.src = filenames[key];
-                imageElm.onload = () => {
-                    images[key].loaded = true;
-                    images[key].element = imageElm;
-                };
-            })(key);
-        }
-        function getImages() {
-            return images;
-        }
-        return {
-            get getImages() { return getImages; },
-        };
-    }
-
-    private mainLoop(canvas: HTMLCanvasElement, context, imageLoader, mouseStateEnv, mouseState, state, update, draw): void {
-        var canvasSize = {
-            width:  canvas.width,
-            height: canvas.height,
-        };
-        var nextMouseState = mouseStateEnv.getState(mouseState);
-        var images = imageLoader.getImages();
-        var newState = update.update(canvasSize, images, nextMouseState, state);
-        context.clearRect(0, 0, canvasSize.width, canvasSize.height);
-        context.save();
-        draw.draw(canvas, context, images, newState);
-        context.restore();
-        window.requestAnimationFrame(() => {
-            this.mainLoop(canvas, context, imageLoader, mouseStateEnv, nextMouseState,
-                          newState, update, draw);
-        });
-    }
-
-    public run(canvas: HTMLCanvasElement, imageFilenames, state, update, draw): void {
-        var context = canvas.getContext('2d');
-        var imageLoader = this.newImageLoader(imageFilenames);
-        var mouseState = new MouseState(canvas);
-        this.mainLoop(canvas, context, imageLoader, mouseState, null, state, update, draw);
-    }
 }
